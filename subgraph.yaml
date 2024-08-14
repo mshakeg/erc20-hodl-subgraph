@@ -1,0 +1,27 @@
+specVersion: 0.0.4
+description: ERC20 HODL Insights
+repository: https://github.com/mshakeg/erc20-hodl-subgraph
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: ERC20Token
+    network: mainnet
+    source:
+      address: "0x1234567890123456789012345678901234567890"  # Replace with actual token address
+      abi: ERC20
+      startBlock: 0  # Replace with the block where the token was deployed
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - User
+        - HourObservation
+      abis:
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/mapping.ts

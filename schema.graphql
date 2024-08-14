@@ -1,0 +1,17 @@
+# Represents a user (wallet address) interacting with the token
+type User @entity {
+  id: ID!                      # Ethereum address of the user
+  address: Bytes!              # Ethereum address in bytes format
+  balance: BigInt!             # Current token balance of the user (for address(0), this represents total supply)
+  observationCount: BigInt!    # Number of hourly observations for this user
+  lastHourTimestamp: BigInt!   # Timestamp of the last rounded hour an observation was created/updated
+  observations: [HourObservation!]! @derivedFrom(field: "user")  # Reverse lookup for user's hourly observations
+}
+
+# Represents an hourly observation of a user's token holding (or token-wide stats for address(0))
+type HourObservation @entity {
+  id: ID!                      # Composite id: user address + hour timestamp
+  user: User!                  # Reference to the user this observation belongs to (address(0) for token-wide observations)
+  timestamp: BigInt!           # Exact timestamp of the observation (can be any time within the hour)
+  cumulativeHODL: BigInt!      # Cumulative HODL value at this observation
+}
