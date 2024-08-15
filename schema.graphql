@@ -14,4 +14,6 @@ type HourObservation @entity {
   user: User!                  # Reference to the user this observation belongs to (address(0) for token-wide observations)
   timestamp: BigInt!           # Exact timestamp of the observation (can be any time within the hour)
   cumulativeHODL: BigInt!      # Cumulative HODL value at this observation
+  previousHourTimestamp: BigInt! # the hour timestamp for the observation that precedes this observation
+  nextHourTimestamp: BigInt!     # the hour timestamp for the observation that succeeds this observation
 }
