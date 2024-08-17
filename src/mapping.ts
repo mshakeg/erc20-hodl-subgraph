@@ -1,8 +1,9 @@
 import { Address, BigInt } from '@graphprotocol/graph-ts'
 
-import { SECONDS_PER_HOUR, ZERO_ADDRESS } from './constants'
+import { ZERO_ADDRESS } from './constants'
 import { Transfer as TransferEvent } from './types/ERC20Token/ERC20'
 import { HourObservation, User } from './types/schema'
+import { getHourTimestamp, getObservationId } from './utils'
 
 function getOrCreateUser(address: Address): User {
   let user = User.load(address.toHexString())
@@ -18,27 +19,28 @@ function getOrCreateUser(address: Address): User {
 }
 
 function getOrCreateHourObservation(user: User, currentTimestamp: BigInt, priorUserBalance: BigInt): HourObservation {
-  const hourTimestamp = currentTimestamp.div(BigInt.fromI32(SECONDS_PER_HOUR)).times(BigInt.fromI32(SECONDS_PER_HOUR))
-  const observationId = user.id + '-' + hourTimestamp.toString()
+  const hourTimestamp = getHourTimestamp(currentTimestamp)
+  const observationId = getObservationId(user.id, hourTimestamp)
   let observation = HourObservation.load(observationId)
 
   if (observation == null) {
     observation = new HourObservation(observationId)
     observation.user = user.id
-    observation.timestamp = currentTimestamp
+    observation.lastTimestamp = currentTimestamp
+    observation.lastBalance = user.balance // this reflects the user's latest balance
     observation.cumulativeHODL = BigInt.fromI32(0)
     observation.previousHourTimestamp = BigInt.fromI32(0)
     observation.nextHourTimestamp = BigInt.fromI32(0)
 
     if (user.observationCount.gt(BigInt.fromI32(0))) {
-      const lastObservationId = user.id + '-' + user.lastHourTimestamp.toString()
+      const lastObservationId = getObservationId(user.id, user.lastHourTimestamp)
       const lastObservation = HourObservation.load(lastObservationId)
       if (lastObservation) {
-        const timeDelta = currentTimestamp.minus(lastObservation.timestamp)
+        const timeDelta = currentTimestamp.minus(lastObservation.lastTimestamp)
         observation.cumulativeHODL = lastObservation.cumulativeHODL.plus(timeDelta.times(priorUserBalance))
 
         // Link the new observation to the previous one
-        observation.previousHourTimestamp = lastObservation.timestamp
+        observation.previousHourTimestamp = getHourTimestamp(lastObservation.lastTimestamp)
         // Update the previous observation to link to the new one
         lastObservation.nextHourTimestamp = hourTimestamp
         lastObservation.save()
@@ -49,9 +51,10 @@ function getOrCreateHourObservation(user: User, currentTimestamp: BigInt, priorU
     user.lastHourTimestamp = hourTimestamp
     user.save()
   } else {
-    const timeDelta = currentTimestamp.minus(observation.timestamp)
+    const timeDelta = currentTimestamp.minus(observation.lastTimestamp)
     observation.cumulativeHODL = observation.cumulativeHODL.plus(timeDelta.times(priorUserBalance))
-    observation.timestamp = currentTimestamp
+    observation.lastTimestamp = currentTimestamp
+    observation.lastBalance = user.balance // this reflects the user's latest balance
   }
 
   return observation
