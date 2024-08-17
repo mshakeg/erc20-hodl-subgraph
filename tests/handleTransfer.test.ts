@@ -33,12 +33,29 @@ function assertEquals(a: BigDecimal, b: BigDecimal): void {
   }
 }
 
-// NOTE: while this helper function may need to iterate over the observations in reverse to find a surrounding observation
-// this need not be the case for the equivalent function implement on the client that make GQL queries to the subgraph.
-// As the client may instead specify in the GQL query for the 1st observation before and after:
-// 1. with a timestamp <= a provided timestamp in descending order to find the timestamp below(if not exactly equal to)
-// 2. with a timestamp >= a provided timestamp in ascending order to find the timestamp after(if not exactly equal to)
-// This would make the previousHourTimestamp and nextHourTimestamp fields on the HourObservation entity unnessary in production
+// NOTE: This helper function iterates over observations in reverse to find the latest observation
+// before the given timestamp. In a production environment, a client querying the subgraph could
+// implement this more efficiently using GraphQL queries.
+
+// A client could use a single GraphQL query to find the latest observation strictly before the given timestamp:
+// query LatestObservation($address: String!, $timestamp: BigInt!) {
+//   hourObservations(
+//     where: { user: $address, lastTimestamp_lt: $timestamp }
+//     orderBy: lastTimestamp
+//     orderDirection: desc
+//     first: 1
+//   ) {
+//     lastTimestamp
+//     lastBalance
+//     cumulativeHODL
+//   }
+// }
+
+// This approach eliminates the need for iteration and makes the previousHourTimestamp and
+// nextHourTimestamp fields on the HourObservation entity unnecessary in production.
+
+// Remember that this function should only be called with discrete hourly timestamps
+// (e.g., 3600, 7200, 10800, etc.) to maintain consistency with the subgraph's data structure.
 function getOrComputeCumulativeHODL(address: string, timestamp: BigInt): BigInt {
   // Ensure the provided timestamp is a discrete hour timestamp
   if (!timestamp.equals(getHourTimestamp(timestamp))) {

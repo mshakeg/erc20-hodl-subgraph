@@ -3,9 +3,9 @@
 This repository contains a subgraph implementation for tracking and analyzing HODLer behavior in ERC20 tokens. The subgraph calculates HODLer ratios for users over specific time periods, providing insights into token retention and user loyalty.
 
 ## Key Features:
-- Tracks user balances and cumulative HODL values at regular(hourly) intervals
-- Exposes the above data so that HODLer ratios between any two points in time can be easily calculated NOT by the subgraph but the client quering the subgraph using the data the subgraph exposes.
-- Implements tests that prove that the subgraph correctly updates all relevant entities and that using this data HODLer ratios can be calculated over arbitrary time ranges.
+- Tracks user balances and cumulative HODL values at regular (hourly) intervals
+- Exposes data that enables clients to calculate HODLer ratios between any two discrete hourly timestamps (e.g., 1:00 PM, 2:00 PM, but not 1:30 PM)
+- Implements comprehensive tests to verify correct entity updates and HODLer ratio calculations over arbitrary time ranges
 
 ## Use Cases:
 - Analyze user retention and loyalty metrics
@@ -15,19 +15,35 @@ This repository contains a subgraph implementation for tracking and analyzing HO
 
 This subgraph offers a powerful tool for token projects, analysts, and researchers to gain deep insights into HODLing patterns and user behavior within ERC20 token ecosystems.
 
+## HODLer Ratio Calculation
+
 A given user's HODLer ratio over a period [A,B] can be calculated as follows:
 
+```
 (cumulativeHODL(user, B) - cumulativeHODL(user, A)) / (cumulativeHODL(token, B) - cumulativeHODL(token, A))
+```
 
-If cumulativeHODL for a user(or the tokenUser i.e address(0)) at a time N does not exist but has surrounding observations at time M and O then the cumulativeHODL for the user at time N can be interpolated as follows:
+Where:
+- `cumulativeHODL(user, X)` is the cumulative HODL value for a user at time X
+- `cumulativeHODL(token, X)` is the cumulative HODL value for the entire token supply at time X (represented by address(0))
 
-cumulativeHODL(user, N) = cumulativeHODL(user, M) + (cumulativeHODL(user, O) - cumulativeHODL(user, M)) * (N - M) / (O - M)
+## Handling Missing Data Points
 
-If cumulativeHODL for a user(or the tokenUser i.e address(0)) at a time N does not exist but has a latest observation at time M where M < N then cumulativeHODL for the user at time N can be extrapolated as follows(since the user's balance has remain unchanged for the duration of M to N):
+1. If cumulativeHODL for a user (or the token) at time N does not exist but has an immediately preceding observation at time M where M < N:
 
-cumulativeHODL(user, N) = cumulativeHODL(user, M) + latest user balance(i.e. the balance that was constant for the duration from M to N) * (N - M)
+```
+cumulativeHODL(user, N) = cumulativeHODL(user, M) + latest user balance * (N - M)
+```
 
-If cumulativeHODL for a user at a time N does not exist but and has no earlier observation stored in the subgraph then we can assume cumulativeHODL for the user at time N to be 0.
+This extrapolation assumes the user's balance has remained unchanged from M to N.
+
+2. If cumulativeHODL for a user at time N does not exist and has no earlier observation:
+
+```
+cumulativeHODL(user, N) = 0
+```
+
+This approach ensures accurate HODLer ratio calculations by using only known data points and extrapolating when necessary.
 
 ### Subgraph Endpoint
 
