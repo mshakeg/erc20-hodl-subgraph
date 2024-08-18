@@ -1,0 +1,83 @@
+# File: bulk-hodl-data-query.graphql
+
+# This query fetches HODL data for all users within a specified time period.
+# It retrieves the necessary data to calculate HODLer ratios for each user.
+
+query GetBulkHODLData($startTimestamp: BigInt!, $endTimestamp: BigInt!, $skip: Int! = 0, $first: Int! = 100) {
+  # Fetch all users
+  users(skip: $skip, first: $first) {
+    id
+    address
+    startObservation: hourObservations(
+      where: {lastTimestamp_lt: $startTimestamp}
+      orderBy: lastTimestamp
+      orderDirection: desc
+      first: 1
+    ) {
+      lastTimestamp
+      lastBalance
+      cumulativeHODL
+    }
+    endObservation: hourObservations(
+      where: {lastTimestamp_lt: $endTimestamp}
+      orderBy: lastTimestamp
+      orderDirection: desc
+      first: 1
+    ) {
+      lastTimestamp
+      lastBalance
+      cumulativeHODL
+    }
+    currentBalance: balance
+  }
+
+  # Fetch total supply data
+  totalSupply: user(id: "0x0000000000000000000000000000000000000000") {
+    startObservation: hourObservations(
+      where: {lastTimestamp_lt: $startTimestamp}
+      orderBy: lastTimestamp
+      orderDirection: desc
+      first: 1
+    ) {
+      lastTimestamp
+      lastBalance
+      cumulativeHODL
+    }
+    endObservation: hourObservations(
+      where: {lastTimestamp_lt: $endTimestamp}
+      orderBy: lastTimestamp
+      orderDirection: desc
+      first: 1
+    ) {
+      lastTimestamp
+      lastBalance
+      cumulativeHODL
+    }
+    currentBalance: balance
+  }
+}
+
+# Usage:
+# 1. Set $startTimestamp and $endTimestamp to the start and end of your reward period.
+# 2. Use $skip and $first for pagination if you have a large number of users.
+# 3. The query returns data for multiple users and the total supply in a single request.
+# 4. For each user and the total supply, you get:
+#    - The observation just before the start timestamp
+#    - The observation just before the end timestamp
+#    - The current balance
+#
+# To calculate the HODLer ratio for each user:
+# 1. Extrapolate the cumulative HODL values for exact start and end timestamps.
+# 2. Calculate the HODL delta for the user and the total supply.
+# 3. Divide the user's HODL delta by the total supply's HODL delta.
+#
+# Note: Handle cases where a user might not have observations before the start or end timestamps.
+# In such cases, you may need to use 0 for cumulativeHODL and the earliest available balance.
+
+# Example usage with variables:
+# {
+#   "startTimestamp": "1625097600",  // Unix timestamp for start of period floored to the nearest top of hour
+#   "endTimestamp": "1627776000",    // Unix timestamp for end of period floored to the nearest top of hour
+#   "skip": 0,
+#   "first": 100
+# }
