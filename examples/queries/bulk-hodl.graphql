@@ -4,11 +4,11 @@
 # It retrieves the necessary data to calculate HODLer ratios for each user.
 
 query GetBulkHODLData($startTimestamp: BigInt!, $endTimestamp: BigInt!, $skip: Int! = 0, $first: Int! = 100) {
-  # Fetch all users
+  # Fetch all users over the specified range, paginate over users if required
   users(skip: $skip, first: $first) {
     id
     address
-    startObservation: hourObservations(
+    startObservation: observations(
       where: {lastTimestamp_lt: $startTimestamp}
       orderBy: lastTimestamp
       orderDirection: desc
@@ -18,7 +18,7 @@ query GetBulkHODLData($startTimestamp: BigInt!, $endTimestamp: BigInt!, $skip: I
       lastBalance
       cumulativeHODL
     }
-    endObservation: hourObservations(
+    endObservation: observations(
       where: {lastTimestamp_lt: $endTimestamp}
       orderBy: lastTimestamp
       orderDirection: desc
@@ -33,7 +33,7 @@ query GetBulkHODLData($startTimestamp: BigInt!, $endTimestamp: BigInt!, $skip: I
 
   # Fetch total supply data
   totalSupply: user(id: "0x0000000000000000000000000000000000000000") {
-    startObservation: hourObservations(
+    startObservation: observations(
       where: {lastTimestamp_lt: $startTimestamp}
       orderBy: lastTimestamp
       orderDirection: desc
@@ -43,7 +43,7 @@ query GetBulkHODLData($startTimestamp: BigInt!, $endTimestamp: BigInt!, $skip: I
       lastBalance
       cumulativeHODL
     }
-    endObservation: hourObservations(
+    endObservation: observations(
       where: {lastTimestamp_lt: $endTimestamp}
       orderBy: lastTimestamp
       orderDirection: desc

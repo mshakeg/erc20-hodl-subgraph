@@ -27,7 +27,7 @@
 # you may need to fetch the latest balance separately.
 
 query GetHODLData($user: String!, $startTimestamp: BigInt!, $endTimestamp: BigInt!) {
-  startUser: hourObservations(
+  startUser: observations(
     where: {user: $user, lastTimestamp_lt: $startTimestamp}
     orderBy: lastTimestamp
     orderDirection: desc
@@ -37,7 +37,7 @@ query GetHODLData($user: String!, $startTimestamp: BigInt!, $endTimestamp: BigIn
     lastBalance
     cumulativeHODL
   }
-  endUser: hourObservations(
+  endUser: observations(
     where: {user: $user, lastTimestamp_lt: $endTimestamp}
     orderBy: lastTimestamp
     orderDirection: desc
@@ -47,7 +47,7 @@ query GetHODLData($user: String!, $startTimestamp: BigInt!, $endTimestamp: BigIn
     lastBalance
     cumulativeHODL
   }
-  startTotal: hourObservations(
+  startTotal: observations(
     where: {user: "0x0000000000000000000000000000000000000000", lastTimestamp_lt: $startTimestamp}
     orderBy: lastTimestamp
     orderDirection: desc
@@ -57,7 +57,7 @@ query GetHODLData($user: String!, $startTimestamp: BigInt!, $endTimestamp: BigIn
     lastBalance
     cumulativeHODL
   }
-  endTotal: hourObservations(
+  endTotal: observations(
     where: {user: "0x0000000000000000000000000000000000000000", lastTimestamp_lt: $endTimestamp}
     orderBy: lastTimestamp
     orderDirection: desc
