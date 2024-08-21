@@ -1,0 +1,70 @@
+# How to use this data to calculate the HODLer ratio:
+#
+# 1. Execute this query with the user's address, start timestamp, and end timestamp.
+# 2. Use the returned data to calculate the HODLer ratio as follows:
+#
+#    // Extrapolate cumulative HODL for start and end timestamps from immediately preceding observation/s
+#    startUserCumulativeHODL = startUser.cumulativeHODL +
+#                              startUser.lastBalance * (startTimestamp - startUser.lastTimestamp)
+#    endUserCumulativeHODL = endUser.cumulativeHODL +
+#                            endUser.lastBalance * (endTimestamp - endUser.lastTimestamp)
+#
+#    startTotalCumulativeHODL = startTotal.cumulativeHODL +
+#                               startTotal.lastBalance * (startTimestamp - startTotal.lastTimestamp)
+#    endTotalCumulativeHODL = endTotal.cumulativeHODL +
+#                             endTotal.lastBalance * (endTimestamp - endTotal.lastTimestamp)
+#
+#    // Calculate HODL deltas
+#    userHODLDelta = endUserCumulativeHODL - startUserCumulativeHODL
+#    totalHODLDelta = endTotalCumulativeHODL - startTotalCumulativeHODL
+#
+#    // Calculate HODLer ratio
+#    HODLerRatio = userHODLDelta / totalHODLDelta
+#
+# Note: This calculation assumes that the balance remains constant after the last observation.
+# If there are no observations before a timestamp, use 0 for both cumulativeHODL and lastBalance.
+# If you need to account for potential transfers after the last observation,
+# you may need to fetch the latest balance separately.
+
+query GetHODLData($user: String!, $startTimestamp: BigInt!, $endTimestamp: BigInt!) {
+  startUser: observations(
+    where: {user: $user, lastTimestamp_lt: $startTimestamp}
+    orderBy: lastTimestamp
+    orderDirection: desc
+    first: 1
+  ) {
+    lastTimestamp
+    lastBalance
+    cumulativeHODL
+  }
+  endUser: observations(
+    where: {user: $user, lastTimestamp_lt: $endTimestamp}
+    orderBy: lastTimestamp
+    orderDirection: desc
+    first: 1
+  ) {
+    lastTimestamp
+    lastBalance
+    cumulativeHODL
+  }
+  startTotal: observations(
+    where: {user: "0x0000000000000000000000000000000000000000", lastTimestamp_lt: $startTimestamp}
+    orderBy: lastTimestamp
+    orderDirection: desc
+    first: 1
+  ) {
+    lastTimestamp
+    lastBalance
+    cumulativeHODL
+  }
+  endTotal: observations(
+    where: {user: "0x0000000000000000000000000000000000000000", lastTimestamp_lt: $endTimestamp}
+    orderBy: lastTimestamp
+    orderDirection: desc
+    first: 1
+  ) {
+    lastTimestamp
+    lastBalance
+    cumulativeHODL
+  }
+}
